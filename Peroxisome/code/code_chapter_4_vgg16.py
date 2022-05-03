@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Peroxisome Project test VGG16 and Transfer learning
+
 Transfer-learning-with-keras
 Chapter 4 from applied deep learning book
 /Desktop/NIH_Youle/Lab%20book/Advanced_applied_deep_learning_book/chapter4/Transfer-learning-with-keras.ipynb
@@ -16,80 +18,91 @@ import glob
 import numpy as np
 import os
 import shutil
+import glob
 
 np.random.seed(42)
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array, array_to_img
-
 """
 creat a training and validation folders
 1) add the folder name to the image name
 2) count image number 
 """
-path_orig="/data/kanferg/Images/TFeb_data_base_for_classification_model_2021/"
-files = glob.glob(path_orig+"*/*.png")
+path_orig="/data/kanferg/Images/Pex_project/SIngle_cell_images_training_set/"
+path_norm="/data/kanferg/Images/Pex_project/SIngle_cell_images_training_set/norm/SC"
+path_pheno = "/data/kanferg/Images/Pex_project/SIngle_cell_images_training_set/pheno/SC"
+files_norm = glob.glob(path_norm+"*/*.png")
+files_phno = glob.glob(path_pheno+"*/*.png")
 """
 len(files)
-11137
+norm - 889
+phno - 1156
 """
-#adding prefix acording to the directory prefix
-# import os
+# copy all single_images to one folder
+os.chdir(path_orig)
+os.mkdir('input_sc_mix')
+path_input_sc_mix = "/data/kanferg/Images/Pex_project/SIngle_cell_images_training_set/input_sc_mix"
 
-# for root, dirs, files in os.walk(path_orig):
-#     if not files:
-#         continue
-#     prefix = os.path.basename(root)
-#     for f in files:
-#         os.rename(os.path.join(root, f), os.path.join(root, "{}_{}".format(prefix, f)))
+# copy files to mix folder
+# os.chdir(path_norm)
+# for fn in files_norm:
+#     shutil.copy(fn, path_input_sc_mix)
 
-# # count Cytosole vs Nuclues
-# files = glob.glob(path_orig+"*/*.png")
-# nuc_files = [fn for fn in files if 'Cytosole' in fn]
-# cyto_files = [fn for fn in files if 'Nuclues' in fn]
-# len(nuc_files), len(cyto_files)
-# #(4967, 6170)
+# os.chdir(path_pheno)
+# co = 0
+# for fn in files_phno:
+#     shutil.copy(fn, path_input_sc_mix)
+#     co += 1
+#     print('{}'.format(co))
 
 # # We build a smaller dataset
-# nuc_train = np.random.choice(nuc_files, size=3000, replace=False)
-# cyto_train = np.random.choice(cyto_files, size=3000, replace=False)
-# nuc_files = list(set(nuc_files) - set(nuc_train))
-# cyto_files = list(set(cyto_files) - set(cyto_train))
 
-# nuc_val = np.random.choice(nuc_files, size=800, replace=False)
-# cyto_val = np.random.choice(cyto_files, size=800, replace=False)
-# nuc_files = list(set(nuc_files) - set(nuc_val))
-# cyto_files = list(set(cyto_files) - set(cyto_val))
 
-# nuc_test = np.random.choice(nuc_files, size=800, replace=False)
-# cyto_test = np.random.choice(cyto_files, size=800, replace=False)
+norm_train = np.random.choice(files_norm, size=680, replace=False)
+phno_train = np.random.choice(files_phno, size=680, replace=False)
+norm_files = list(set(files_norm) - set(norm_train))
+phon_files = list(set(files_phno) - set(phno_train))
 
-# print('nuc datasets:', nuc_train.shape, nuc_val.shape, nuc_test.shape)
-# print('cyto datasets:', cyto_train.shape, cyto_val.shape, cyto_test.shape)
+norm_val = np.random.choice(files_norm, size=120, replace=False)
+phno_val = np.random.choice(files_phno, size=120, replace=False)
+norm_files = list(set(norm_files) - set(norm_val))
+phon_files = list(set(phon_files) - set(phno_val))
+
+norm_test = np.random.choice(norm_files, size=120, replace=False)
+phon_test = np.random.choice(phon_files, size=120, replace=False)
+
+print('norm datasets: {}{}{}'.format(norm_train.shape, norm_val.shape, norm_test.shape))
+print('pheno datasets: {}{}{}'.format(phno_train.shape, phno_val.shape, phon_test.shape))
+
 '''
-nuc datasets: (3000,) (800,) (800,)
-cyto datasets: (3000,) (800,) (800,)
+norm datasets: (680,)(120,)(120,)
+pheno datasets: (680,)(120,)(120,)
 '''
 os.chdir(path_orig)
 train_dir = 'training_data'
 val_dir = 'validation_data'
 test_dir = 'test_data'
 
-# train_files = np.concatenate([nuc_train, cyto_train])
-# validate_files = np.concatenate([nuc_val, cyto_val])
-# test_files = np.concatenate([nuc_test, cyto_test])
+train_files = np.concatenate([norm_train, phno_train])
+validate_files = np.concatenate([norm_val, phno_val])
+test_files = np.concatenate([norm_test, phon_test])
 
-# os.mkdir(train_dir) if not os.path.isdir(train_dir) else None
-# os.mkdir(val_dir) if not os.path.isdir(val_dir) else None
-# os.mkdir(test_dir) if not os.path.isdir(test_dir) else None
+os.mkdir(train_dir) if not os.path.isdir(train_dir) else None
+os.mkdir(val_dir) if not os.path.isdir(val_dir) else None
+os.mkdir(test_dir) if not os.path.isdir(test_dir) else None
 
-# for fn in train_files:
-#     shutil.copy(fn, train_dir)
+os.chdir(path_orig)
+for fn in train_files:
+    shutil.copy(fn, train_dir)
+    print('{}'.format(fn))
 
-# for fn in validate_files:
-#     shutil.copy(fn, val_dir)
+for fn in validate_files:
+    shutil.copy(fn, val_dir)
+    print('{}'.format(fn))
     
-# for fn in test_files:
-#     shutil.copy(fn, test_dir)
+for fn in test_files:
+    shutil.copy(fn, test_dir)
+    print('{}'.format(fn))
 
 '''
 Load of the actual images
@@ -107,16 +120,16 @@ validation_imgs = [img_to_array(load_img(img, target_size=IMG_DIM)) for img in v
 validation_imgs = np.array(validation_imgs)
 validation_labels = [fn.split('/')[1].split('_')[0].strip() for fn in validation_files]
 
-print('Train dataset shape:', train_imgs.shape, 
-      '\tValidation dataset shape:', validation_imgs.shape)
-#Train dataset shape: (6000, 150, 150, 3) 	Validation dataset shape: (1600, 150, 150, 3)
+print('Train dataset shape:{}'.format(train_imgs.shape), 
+      '\tValidation dataset shape:{}'.format(validation_imgs.shape))
+#Train dataset shape:(1360, 150, 150, 3) 	Validation dataset shape:(240, 150, 150, 3)
 train_imgs_scaled = train_imgs.astype('float32')
 validation_imgs_scaled  = validation_imgs.astype('float32')
 train_imgs_scaled /= 255
 validation_imgs_scaled /= 255
 
 print(train_imgs[0].shape) #(150, 150, 3)
-array_to_img(train_imgs[0]) #dispaly the first image
+array_to_img(train_imgs[23]) #dispaly the first image
 '''
 change labale to 0 for nuc and 1 to cyto
 '''
@@ -138,6 +151,8 @@ train_labels_enc = le.transform(train_labels)
 validation_labels_enc = le.transform(validation_labels)
 
 print(train_labels[10:15], train_labels_enc[10:15])
+
+# ['norm', 'norm', 'pheno', 'pheno', 'pheno'] [0 0 1 1 1]
 
 '''
 CNN model
@@ -174,6 +189,10 @@ history = model.fit(x=train_imgs_scaled, y=train_labels_enc,
                     batch_size=batch_size,
                     epochs=epochs,
                     verbose=1)
+
+#save the model
+os.chdir("/data/kanferg/Images/Pex_project/Transfer_learning/output_charts")
+model.save('pex_basic.h5')
 
 
 #test CNN preformance
@@ -243,7 +262,7 @@ input_shape = (150, 150, 3)
 
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.models import Sequential
-from keras import optimizers
+from tensorflow.keras import optimizers
 
 model = Sequential()
 
@@ -271,19 +290,19 @@ model.compile(loss='binary_crossentropy',
               optimizer=optimizers.RMSprop(lr=1e-4),
               metrics=['accuracy'])
               
-history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=100,
-                              validation_data=val_generator, validation_steps=50, 
+history = model.fit_generator(train_generator, steps_per_epoch=20, epochs=30,
+                              validation_data=val_generator, validation_steps=10, 
                               verbose=1)  
 
 #save the model
-os.chdir("/data/kanferg/Images/TFeb_data_base_for_classification_model_2021/temp")
-model.save('tfeb_aug_dropout.h5')
+os.chdir("/data/kanferg/Images/Pex_project/Transfer_learning/output_charts")
+model.save('pex_aug_no_dropout.h5')
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 t = f.suptitle('Basic CNN Performance', fontsize=12)
 f.subplots_adjust(top=0.85, wspace=0.3)
 
-epochs=100
+epochs=30
 epoch_list = list(range(1,epochs+1))
 ax1.plot(epoch_list, history.history['accuracy'], label='Train Accuracy')
 ax1.plot(epoch_list, history.history['val_accuracy'], label='Validation Accuracy')
@@ -346,8 +365,7 @@ validation_features_vgg = get_bottleneck_features(vgg_model, validation_imgs_sca
 print('Train Bottleneck Features:', train_features_vgg.shape, 
       '\tValidation Bottleneck Features:', validation_features_vgg.shape)
 #results:
-    #Train Bottleneck Features: (6000, 8192) 	
-    #Validation Bottleneck Features: (1600, 8192)
+   #Train Bottleneck Features: (1360, 8192) 	Validation Bottleneck Features: (240, 8192)
 '''
 now we will train with aougmentation
 Pre-trained CNN model as a Feature Extractor with Image Augmentation
@@ -365,7 +383,7 @@ input_shape = (150, 150, 3)
 
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, InputLayer
 from keras.models import Sequential
-from keras import optimizers
+from tensorflow.keras import optimizers
 
 model = Sequential()
 model.add(vgg_model)
@@ -376,22 +394,23 @@ model.add(Dropout(0.3))
 model.add(Dense(1, activation='sigmoid'))
 
 model.compile(loss='binary_crossentropy',
-              optimizer=optimizers.RMSprop(lr=2e-5),
+              optimizer=optimizers.RMSprop(learning_rate=2e-5),
               metrics=['accuracy'])
               
-history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=100,
-                              validation_data=val_generator, validation_steps=50, 
+history = model.fit_generator(train_generator, steps_per_epoch=30, epochs=30,
+                              validation_data=val_generator, validation_steps=10, 
                               verbose=1)  
 
 #save the model
-os.chdir("/data/kanferg/Images/TFeb_data_base_for_classification_model_2021/temp")
-model.save('tfeb_aug_dropout_vgg16_freezall.h5')
+os.chdir("/data/kanferg/Images/Pex_project/Transfer_learning/output_charts")
+model.save('pex_aug_dropout.h5')
+
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 t = f.suptitle('tfeb_aug_dropout_vgg16_freezall', fontsize=12)
 f.subplots_adjust(top=0.85, wspace=0.3)
 
-epochs=100
+epochs=30
 epoch_list = list(range(1,epochs+1))
 ax1.plot(epoch_list, history.history['accuracy'], label='Train Accuracy')
 ax1.plot(epoch_list, history.history['val_accuracy'], label='Validation Accuracy')
@@ -439,7 +458,7 @@ input_shape = (150, 150, 3)
 
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, InputLayer
 from keras.models import Sequential
-from keras import optimizers
+from tensorflow.keras import optimizers
 
 model = Sequential()
 model.add(vgg_model)
@@ -450,15 +469,15 @@ model.add(Dropout(0.3))
 model.add(Dense(1, activation='sigmoid'))
 
 model.compile(loss='binary_crossentropy',
-              optimizer=optimizers.RMSprop(lr=1e-5),
+              optimizer=optimizers.RMSprop(learning_rate=1e-5),
               metrics=['accuracy'])
               
-history = model.fit_generator(train_generator, steps_per_epoch=100, epochs=100,
-                              validation_data=val_generator, validation_steps=50, 
+history = model.fit_generator(train_generator, steps_per_epoch=30, epochs=30,
+                              validation_data=val_generator, validation_steps=10, 
                               verbose=1)  
 
-os.chdir("/data/kanferg/Images/TFeb_data_base_for_classification_model_2021/temp")
-model.save('tfeb_aug_dropout_vgg16_unfreezblock_4and5.h5')
+os.chdir("/data/kanferg/Images/Pex_project/Transfer_learning/output_charts")
+model.save('pex_aug_dropout_vgg16_unfreezblock_4and5.h5')
 
 '''
 Evaluating our Deep Learning Models on Test Data
@@ -471,17 +490,17 @@ import matplotlib.pyplot as plt
 from keras.preprocessing.image import load_img, img_to_array, array_to_img
 from keras.models import load_model
 import os
-os.chdir("/data/kanferg/Images/TFeb_data_base_for_classification_model_2021/code")
+os.chdir("/data/kanferg/Images/Pex_project/Transfer_learning/code")
 import utils.model_evaluation_utils as meu
 %matplotlib inline
 
 # load saved models
-os.chdir("/data/kanferg/Images/TFeb_data_base_for_classification_model_2021/temp")
-basic_cnn = load_model('tfeb_aug_dropout.h5')
+os.chdir("/data/kanferg/Images/Pex_project/Transfer_learning/output_charts")
+basic_cnn = load_model('pex_basic.h5')
 #img_aug_cnn = load_model('cats_dogs_cnn_img_aug.h5')
 #tl_cnn = load_model('cats_dogs_tlearn_basic_cnn.h5')
-tl_img_aug_cnn = load_model('tfeb_aug_dropout_vgg16_freezall.h5')
-tl_img_aug_finetune_cnn = load_model('tfeb_aug_dropout_vgg16_unfreezblock_4and5.h5')
+tl_img_aug_cnn = load_model('pex_aug_dropout.h5')
+tl_img_aug_finetune_cnn = load_model('pex_aug_dropout_vgg16_unfreezblock_4and5.h5')
 
 # model.save('tfeb_aug_dropout.h5') #basic
 # model.save('tfeb_aug_dropout_vgg16_freezall.h5') #transfer freez_all
@@ -491,8 +510,8 @@ tl_img_aug_finetune_cnn = load_model('tfeb_aug_dropout_vgg16_unfreezblock_4and5.
 # load other configurations
 IMG_DIM = (150, 150)
 input_shape = (150, 150, 3)
-num2class_label_transformer = lambda l: ['Cytosole' if x == 0 else 'Nuclues' for x in l]
-class2num_label_transformer = lambda l: [0 if x == 'Cytosole' else 1 for x in l]
+num2class_label_transformer = lambda l: ['norm' if x[0] == 0 else 'pheno' for x in l]
+class2num_label_transformer = lambda l: [0 if x[0] == 'pheno' else 1 for x in l]
 
 # load VGG model for bottleneck features
 from keras.applications import vgg16
@@ -515,7 +534,7 @@ def get_bottleneck_features(model, input_imgs):
 test labales
 '''
 IMG_DIM = (150, 150)
-os.chdir("/data/kanferg/Images/TFeb_data_base_for_classification_model_2021")
+os.chdir("/data/kanferg/Images/Pex_project/SIngle_cell_images_training_set/")
 test_files = glob.glob('test_data/*')
 test_imgs = [img_to_array(load_img(img, target_size=IMG_DIM)) for img in test_files]
 test_imgs = np.array(test_imgs)
@@ -530,21 +549,24 @@ test_labels_enc = class2num_label_transformer(test_labels)
 print('Test dataset shape:', test_imgs.shape)
 print(test_labels[0:5], test_labels_enc[0:5])
 
-#Test dataset shape: (1600, 150, 150, 3)
-#['Cytosole', 'Nuclues', 'Nuclues', 'Cytosole', 'Cytosole'] [0, 1, 1, 0, 0]
+Test dataset shape: (240, 150, 150, 3)
+['norm', 'norm', 'pheno', 'norm', 'pheno'] [1, 1, 0, 1, 0]
 
 '''
 Model 1: Basic CNN Performance
 '''
-predictions = basic_cnn.predict_classes(test_imgs_scaled, verbose=0)
-predictions = num2class_label_transformer(predictions)
 
+
+predictions = basic_cnn.predict(test_imgs_scaled, verbose=0)
+classes_x=[np.where(lab >0.5,1,0).tolist() for lab in predictions]
+predictions_label = num2class_label_transformer(classes_x)
+predictions_label
 
 # meu.display_model_performance_metrics(true_labels=test_labels, predicted_labels=predictions, 
 #                                       classes=list(set(test_labels)))
 #the meu is not working
 
-meu.get_metrics(test_labels, predictions)
+meu.get_metrics(test_labels, predictions_label)
 '''
 Accuracy: 0.7738
 Precision: 0.777
@@ -555,15 +577,17 @@ F1 Score: 0.7731
 '''
 model 2: tl_img_aug_cnn
 '''
-predictions = tl_img_aug_cnn.predict_classes(test_imgs_scaled, verbose=0)
-predictions = num2class_label_transformer(predictions)
+predictions = tl_img_aug_cnn.predict(test_imgs_scaled, verbose=0)
+classes_x=[np.where(lab >0.5,1,0).tolist() for lab in predictions]
+predictions_label = num2class_label_transformer(classes_x)
+predictions_label
 
 
 # meu.display_model_performance_metrics(true_labels=test_labels, predicted_labels=predictions, 
 #                                       classes=list(set(test_labels)))
 #the meu is not working
 
-meu.get_metrics(test_labels, predictions)
+meu.get_metrics(test_labels, predictions_label)
 '''
 Accuracy: 0.66
 Precision: 0.6623
@@ -574,15 +598,20 @@ F1 Score: 0.6588
 '''
 model 3: tl_img_aug_finetune_cnn
 '''
-predictions = tl_img_aug_finetune_cnn.predict_classes(test_imgs_scaled, verbose=0)
-predictions = num2class_label_transformer(predictions)
+
+
+predictions = tl_img_aug_finetune_cnn.predict(test_imgs_scaled, verbose=0)
+classes_x=[np.where(lab >0.5,1,0).tolist() for lab in predictions]
+predictions_label = num2class_label_transformer(classes_x)
+predictions_label
+
 
 
 # meu.display_model_performance_metrics(true_labels=test_labels, predicted_labels=predictions, 
 #                                       classes=list(set(test_labels)))
 #the meu is not working
 
-meu.get_metrics(test_labels, predictions)
+meu.get_metrics(test_labels, predictions_label)
 '''
 Accuracy: 0.7725
 Precision: 0.7749
@@ -591,6 +620,14 @@ F1 Score: 0.772
 '''
 
 
+def show_prediction(in_img):
+    x = tf.expand_dims(test_imgs_scaled[1,:,:,:],0)
+    predictions = tl_img_aug_finetune_cnn.predict(x, verbose=0)
+    classes_x=[np.where(lab >0.5,1,0).tolist() for lab in predictions]
+    predictions_label = num2class_label_transformer(classes_x)
+    print(predictions_label)
+    plt.imshow(in_img)
+    
 
 
 
