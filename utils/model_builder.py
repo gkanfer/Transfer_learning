@@ -3,7 +3,7 @@ from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.vgg16 import preprocess_input, decode_predictions
 import numpy as np
-
+from tqdm import tqdm
 import glob
 import numpy as np
 import os
@@ -41,7 +41,7 @@ class model_builder():
                 train_imgs_scaled=None, validation_imgs_scaled=None, path_model=None, batch=None, epoch=None,
                 input_shape=None, train_labels_enc=None, validation_labels_enc = None, train_imgs = None,
                  validation_imgs = None, steps_per_epoch_sel = None,validation_steps = None, file_extention = None,
-                 extract_size_train = None,extract_size_val = None):
+                 extract_size_train = None,extract_size_val = None,imbalance_train = None, imbalance_val = None):
         self.IMG_DIM = IMG_DIM
         self.path_training = path_training
         self.path_validation = path_validation
@@ -60,14 +60,37 @@ class model_builder():
         self.file_extention = file_extention
         self.extract_size_train = extract_size_train
         self.extract_size_val = extract_size_val
-
+        self.imbalance_train = imbalance_train
+        self.imbalance_val = imbalance_val
+        
+    def display_data_distribution(self):
+        train_files = glob.glob(os.path.join(self.path_training,'*.' + self.file_extention))
+        validation_files = glob.glob(os.path.join(self.path_validation,'*.' + self.file_extention))
+        train_labels = [fn.split('/')[7].split('_')[0].strip() for fn in train_files]
+        validation_labels = [fn.split('/')[7].split('_')[0].strip() for fn in validation_files]
+        print('number of training samples norm: {}'.format(train_labels.count('norm')))
+        print('number of training samples pheno: {}'.format(train_labels.count('pheno')))
+                                                      
     def build_image__sets(self):
         # Training file generator
         train_files = glob.glob(os.path.join(self.path_training,'*.' + self.file_extention))
         if self.extract_size_train is not None:
             train_files = train_files[:self.extract_size_train]
         train_imgs = []
-        train_imgs = [img_to_array(load_img(img, target_size=self.IMG_DIM)) for img in train_files]
+        # method for dealing with imbalance data, cut the norm in to minority
+        if self.imbalance_train is not None:
+            train_files_new = []
+            count_norm = 0  
+            for i in range(len(train_files)):
+                if train_files[i].split('/')[7].split('_')[0].strip()=='norm':
+                        if count_norm < self.imbalance_train:
+                            train_files_new.append(train_files[i])
+                            count_norm += 1
+                else:
+                    train_files_new.append(train_files[i])
+            train_files = train_files_new # update variable
+        print('run training')
+        train_imgs = [img_to_array(load_img(train_files[i], target_size=self.IMG_DIM)) for i in tqdm(range(len(train_files)))]
         train_imgs = np.array(train_imgs)
         self.train_imgs = train_imgs
         train_labels = [fn.split('/')[7].split('_')[0].strip() for fn in train_files]
@@ -75,7 +98,20 @@ class model_builder():
         validation_files = glob.glob(os.path.join(self.path_validation,'*.' + self.file_extention))
         if self.extract_size_val is not None:
             validation_files = validation_files[:self.extract_size_val]
-        validation_imgs = [img_to_array(load_img(img, target_size=self.IMG_DIM)) for img in validation_files]
+        # method for dealing with imbalance data, cut the norm in to minority
+        if self.imbalance_val is not None:
+            validation_files_new = []
+            count_norm = 0  
+            for i in range(len(validation_files)):
+                if validation_files[i].split('/')[7].split('_')[0].strip()=='norm':
+                        if count_norm < self.imbalance_val:
+                            validation_files_new.append(validation_files[i])
+                            count_norm += 1
+                else:
+                    validation_files_new.append(validation_files[i])
+            validation_files = validation_files_new # update variable
+        print('run valadtion')
+        validation_imgs = [img_to_array(load_img(validation_files[i], target_size=self.IMG_DIM)) for i in tqdm(range(len(validation_files)))]
         validation_imgs = np.array(validation_imgs)
         self.validation_imgs = validation_imgs
         validation_labels = [fn.split('/')[7].split('_')[0].strip() for fn in validation_files]
@@ -156,8 +192,8 @@ class model_builder():
         val_datagen = ImageDataGenerator(rescale=1. / 255)
 
         # applay new model with droput and aougmentation
-        train_generator = train_datagen.flow(self.train_imgs, self.train_labels_enc, batch_size=self.batch_size)
-        val_generator = val_datagen.flow(self.validation_imgs, self.validation_labels_enc, batch_size=self.batch_size)
+        train_generator = train_datagen.flow(self.train_imgs, self.train_labels_enc, batch_size=self.batch)
+        val_generator = val_datagen.flow(self.validation_imgs, self.validation_labels_enc, batch_size=self.batch)
 
         model = Sequential()
 
