@@ -11,6 +11,7 @@ import shutil
 import glob
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+import pickle
 
 np.random.seed(42)
 import matplotlib.pyplot as plt
@@ -41,7 +42,8 @@ class model_builder():
                 train_imgs_scaled=None, validation_imgs_scaled=None, path_model=None, batch=None, epoch=None,
                 input_shape=None, train_labels_enc=None, validation_labels_enc = None, train_imgs = None,
                  validation_imgs = None, steps_per_epoch_sel = None,validation_steps = None, file_extention = None,
-                 extract_size_train = None,extract_size_val = None,imbalance_train = None, imbalance_val = None):
+                 extract_size_train = None,extract_size_val = None,imbalance_train = None, 
+                 imbalance_val = None, model_name = None, path_checkpoints=None):
         self.IMG_DIM = IMG_DIM
         self.path_training = path_training
         self.path_validation = path_validation
@@ -62,6 +64,8 @@ class model_builder():
         self.extract_size_val = extract_size_val
         self.imbalance_train = imbalance_train
         self.imbalance_val = imbalance_val
+        self.model_name = model_name
+        self.path_checkpoints = path_checkpoints
         
     def display_data_distribution(self):
         train_files = glob.glob(os.path.join(self.path_training,'*.' + self.file_extention))
@@ -380,14 +384,28 @@ class model_builder():
         model.compile(loss='binary_crossentropy',
                       optimizer=optimizers.RMSprop(learning_rate=1e-5),
                       metrics=['accuracy'])
-
+        
+        checkpoint_path = self.path_checkpoints + "cp-{epoch:04d}.ckpt"
+        checkpoint_dir = os.path.dirname(checkpoint_path)
+        
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                 save_weights_only=True,
+                                                 verbose=1)
+        
         history = model.fit_generator(train_generator, steps_per_epoch=self.steps_per_epoch_sel, epochs=self.epoch,
                                       validation_data=val_generator, validation_steps=self.validation_steps,
-                                      verbose=1)
+                                      verbose=1,callbacks=[cp_callback])
 
         os.chdir(self.path_model)
-        model.save('cnn_transfer_learning_Augmentation_drop_layer_4and5.h5')
-
+        if self.model_name:
+            model.save(self.model_name)
+            with open(self.model_name + '_history'  , 'wb') as file_pi:
+                pickle.dump(history.history, file_pi)
+        else:
+            model.save('cnn_transfer_learning_Augmentation_drop_layer_4and5.h5')
+            with open('history_', 'wb') as file_pi:
+                pickle.dump(history.history, file_pi)
+        
         # f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
         # t = f.suptitle('cnn_transfer_learning_Augmentation_drop_layer_4and5n', fontsize=12)
         # f.subplots_adjust(top=0.85, wspace=0.3)
